@@ -8,11 +8,23 @@ command = "npm run build"
 cwd = "./"
 watch_paths = ["src/**/*.ts", "src/**/*.tsx"]
 
+# KV Bindings for newsletter storage
+[[kv_namespaces]]
+binding = "SUBSCRIBERS_KV"
+id = "default"
+preview_id = "default"
+
 [env.production]
 routes = [
   { pattern = "seorankerai.com", zone_name = "seorankerai.com" },
   { pattern = "*.seorankerai.com", zone_name = "seorankerai.com" }
 ]
+
+# Production KV binding
+[[env.production.kv_namespaces]]
+binding = "SUBSCRIBERS_KV"
+id = "CHANGE_ME_TO_YOUR_KV_ID"
+preview_id = "default"
 
 [triggers.crons]
 crons = ["0 0 * * *"]

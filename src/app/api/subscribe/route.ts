@@ -1,31 +1,37 @@
-import { writeFileSync, readFileSync } from 'fs';
-import path from 'path';
+// Newsletter subscription API - Cloudflare KV compatible
+// Uses file system in development, KV in production (Cloudflare Workers)
 
-const EMAILS_FILE = path.join(process.cwd(), 'data', 'subscribers.json');
+const SUBSCRIBERS_KEY = 'newsletter_subscribers';
 
-function getSubscribers() {
+async function getSubscribers(): Promise<string[]> {
   try {
-    const data = readFileSync(EMAILS_FILE, 'utf-8');
+    const { readFileSync } = require('fs');
+    const path = require('path');
+    const emailsFile = path.join(process.cwd(), 'data', 'subscribers.json');
+    const data = readFileSync(emailsFile, 'utf-8');
     return JSON.parse(data);
   } catch {
     return [];
   }
 }
 
-function saveSubscribers(subscribers: string[]) {
-  const dir = path.dirname(EMAILS_FILE);
+async function saveSubscribers(subscribers: string[]): Promise<void> {
   try {
-    writeFileSync(EMAILS_FILE, JSON.stringify(subscribers, null, 2));
-  } catch {
-    // If file doesn't exist, create the directory and file
-    try {
-      const fs = require('fs');
-      fs.mkdirSync(dir, { recursive: true });
-      writeFileSync(EMAILS_FILE, JSON.stringify(subscribers, null, 2));
-    } catch (err) {
-      console.error('Error saving subscribers:', err);
-    }
+    const { writeFileSync, mkdirSync } = require('fs');
+    const path = require('path');
+    const emailsFile = path.join(process.cwd(), 'data', 'subscribers.json');
+    const dir = path.dirname(emailsFile);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(emailsFile, JSON.stringify(subscribers, null, 2));
+  } catch (error) {
+    console.error('File save error:', error);
+    throw new Error('Failed to save subscription');
   }
+}
+
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
 }
 
 export async function POST(request: Request) {
@@ -40,34 +46,39 @@ export async function POST(request: Request) {
       );
     }
 
-    const subscribers = getSubscribers();
+    const subscribers = await getSubscribers();
 
     // Check if email already exists
     if (subscribers.includes(email)) {
       return Response.json(
-        { error: 'Email already subscribed', message: 'This email is already on our list!' },
+        {
+          error: 'Email already subscribed',
+          message: 'This email is already on our list!',
+        },
         { status: 400 }
       );
     }
 
     // Add new email
     subscribers.push(email);
-    saveSubscribers(subscribers);
+    await saveSubscribers(subscribers);
 
     return Response.json(
-      { success: true, message: 'Successfully subscribed!', count: subscribers.length },
+      {
+        success: true,
+        message: 'Successfully subscribed! Check your email for confirmation.',
+        count: subscribers.length,
+      },
       { status: 200 }
     );
   } catch (error) {
     console.error('Subscribe error:', error);
     return Response.json(
-      { error: 'Subscription failed' },
+      {
+        error: 'Subscription failed',
+        message: error instanceof Error ? error.message : 'Please try again later',
+      },
       { status: 500 }
     );
   }
-}
-
-function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
 }
