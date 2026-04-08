@@ -1,0 +1,17 @@
+name = "sej-clone"
+type = "javascript"
+main = "dist/index.js"
+compatibility_date = "2024-04-01"
+
+[build]
+command = "npm run build"
+cwd = "./"
+watch_paths = ["src/**/*.ts", "src/**/*.tsx"]
+
+[env.production]
+routes = [
+  { pattern = "sej-clone.pages.dev", zone_name = "pages.dev" }
+]
+
+[triggers.crons]
+crons = ["0 0 * * *"]
