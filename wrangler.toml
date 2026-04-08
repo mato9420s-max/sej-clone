@@ -10,7 +10,8 @@ watch_paths = ["src/**/*.ts", "src/**/*.tsx"]
 
 [env.production]
 routes = [
-  { pattern = "sej-clone.pages.dev", zone_name = "pages.dev" }
+  { pattern = "seorankerai.com", zone_name = "seorankerai.com" },
+  { pattern = "*.seorankerai.com", zone_name = "seorankerai.com" }
 ]
 
 [triggers.crons]
